@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>Firebase:v9:Chatアプリ</title>
+<link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+
+<!-- コンテンツ表示画面 -->
+<div id="chat-container">
+    <div id="output" style="height:300px;overflow: scroll;">
+        <!-- ここにJsでメッセージが追加される -->
+    </div>   
+    <div>
+        <input type="text" id="uname" placeholder="Your name">
+    </div>
+    <div>
+        <textarea id="text" placeholder="message-input" cols="30" rows="1" style="overflow: auto;"></textarea>
+        <button id="send">送信</button>
+    </div>
+</div>
+
+<!-- JQuery -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+<!-- FirebaseとDeepL APIを使用 -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+    import { getDatabase, ref, push, set, onChildAdded, remove, update, onChildChanged, onChildRemoved } 
+    from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyBzvBwZ9zDGiR3lICoTzq3lupKOTOiTe6U",
+      authDomain: "gsdemo-2a1b3.firebaseapp.com",
+      projectId: "gsdemo-2a1b3",
+      storageBucket: "gsdemo-2a1b3.appspot.com",
+      messagingSenderId: "868147135106",
+      appId: "1:868147135106:web:3740001e4abd14bbbc6a9b"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const dbRef = ref(db, "chat");
+
+    let currentUser = ""; 
+
+    // DeepL APIキーを設定
+    const deeplApiKey = '9a27535e-79e9-4cde-91c2-1f0758bfffe4:fx'; // 自分のDeepL APIキー
+
+    // DeepL APIでテキストを英語に翻訳する関数
+    async function translateToEnglish(text) {
+        try {
+            const response = await fetch("https://api-free.deepl.com/v2/translate", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                body: new URLSearchParams({
+                    auth_key: deeplApiKey,
+                    text: text,
+                    target_lang: "EN" // 翻訳先を英語に設定
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            return data.translations[0].text; // 翻訳されたテキストを返す
+        } catch (error) {
+            console.error("Translation Error:", error);
+            return "Translation Error";
+        }
+    }
+
+    // 送信処理
+    $("#send").on("click", async function() {
+        currentUser = $("#uname").val();
+        const text = $("#text").val();
+
+        // 翻訳処理を実行
+        const translatedText = await translateToEnglish(text);
+
+        // メッセージデータに翻訳されたテキストを追加
+        const msg = {
+            uname: currentUser,
+            timestamp: new Date().toISOString(),
+            text: text,
+            translatedText: translatedText // 翻訳結果を追加
+        };
+
+        const id = push(dbRef);
+        set(id, msg);
+        $("#text").val('');
+    });
+
+    // メッセージ表示処理
+    onChildAdded(dbRef, function(data) {
+        const msg = data.val();
+        const key = data.key;
+        const timestamp = new Date(msg.timestamp);
+
+        const formattedTime = timestamp.toLocaleString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+            day: '2-digit'
+        });
+
+    // 色変える
+    let messageClass = (msg.uname === "Noriki") ? "sent" : "received";
+
+
+        // HTML要素の生成
+        let h = `
+            <p class="message ${messageClass}" id="${key}">
+                <strong>${msg.uname}</strong><br>
+                <span contentEditable="true" id="${key}_update">${msg.text}</span><br>
+                <span class="time">Sent on ${formattedTime}</span><br>
+                <strong>Translated:</strong>
+                <span>${msg.translatedText}</span><br> <!-- 翻訳結果の表示 -->
+                <span class="remove" data-key="${key}">🗑️</span>
+                <span class="update" data-key="${key}">🆙</span>
+            </p>
+        `;
+        $("#output").append(h); // メッセージを出力
+    });
+
+    // 削除イベント
+    $('#output').on("click", ".remove", function() {
+        const key = $(this).attr("data-key");
+        remove(ref(db, "chat/" + key));
+    });
+
+    // 更新イベント
+    $('#output').on("click", ".update", function() {
+        const key = $(this).attr("data-key");
+        update(ref(db, "chat/" + key), {
+            text: $("#" + key + "_update").html()
+        });
+    });
+
+    // Firebase側で削除されたときの処理
+    onChildRemoved(dbRef, (data) => {
+        $("#" + data.key).remove();
+    });
+
+    // Firebase側で更新されたときの処理
+    onChildChanged(dbRef, (data) => {
+        $("#" + data.key + "_update").html(data.val().text).fadeOut(800).fadeIn(800);
+    });
+</script>
+</body>
+</html>

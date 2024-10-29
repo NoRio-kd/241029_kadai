@@ -1,0 +1,75 @@
+body {
+    font-family: Arial, sans-serif;
+    /* background-color: aquamarine; */
+    font-size: 14px;
+}
+
+div#chat-container {
+    /* background-color: whitesmoke; */
+    width: 800px;
+    height: 1000px;
+    margin: 0px auto;
+    font-size: 14px;
+}
+
+input#uname {
+    margin: 10px 0px;
+    height: 20px;
+}
+
+textarea#text {
+    overflow: auto;
+    width: 230px;
+    height: 20px;
+}
+
+/* メッセージの基本スタイル */
+.message {
+    padding: 10px;
+    margin: 0px 0;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    max-width: 70%;
+    position: relative;
+}
+
+/* 自分のメッセージ */
+.sent {
+    width: 50%;
+    background-color: #dcf8c6; /* 自分のメッセージ用の色 */
+    align-self: flex-end;
+}
+
+/* 他のユーザーのメッセージ */
+.received {
+    width: 50%;
+    background-color: #ffffff; /* 他の人のメッセージ用の色 */
+    border: 1px solid #e1e1e1;
+    align-self: flex-start;
+}
+
+/* 時間表示 */
+.time {
+    font-size: 10px;
+    color: #777;
+    text-align: right;
+    display: block;
+    margin-top: 5px;
+}
+
+button#send {
+    background-color: #0078fe;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    padding: 5px 15px;
+    font-size: 14px;
+    display: flex;
+    margin: 10px 0px;
+}
+
+button#send:hover {
+    background-color: #005bb5;
+}
+
